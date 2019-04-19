@@ -1,0 +1,33 @@
+{
+  "name": "trickle-dapp-backend",
+  "version": "0.0.1",
+  "description": "Triccle DAPP backend",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DeRain/trickle-dapp-backend.git"
+  },
+  "keywords": [
+    "solidity",
+    "ethereum",
+    "payments"
+  ],
+  "author": "Kirill Beresnev <k.beresnev@dreamteam.gg>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DeRain/trickle-dapp-backend/issues"
+  },
+  "homepage": "https://github.com/DeRain/trickle-dapp-backend#readme",
+  "dependencies": {
+    "openzeppelin-solidity": "^2.2.0"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "chai-bn": "^0.1.1",
+    "moment": "^2.24.0",
+    "openzeppelin-test-helpers": "^0.3.2"
+  }
+}
