@@ -10,6 +10,9 @@
     "type": "git",
     "url": "git+https://github.com/DeRain/trickle-dapp-backend.git"
   },
+  "scripts": {
+    "build-contracts": "sol-merger \"./contracts/*.sol\" ./build/merged-contracts"
+  },
   "keywords": [
     "solidity",
     "ethereum",
@@ -30,6 +33,7 @@
     "chai-as-promised": "^7.1.1",
     "chai-bn": "^0.1.1",
     "moment": "^2.24.0",
-    "openzeppelin-test-helpers": "^0.3.2"
+    "openzeppelin-test-helpers": "^0.3.2",
+    "sol-merger": "^0.1.3"
   }
 }

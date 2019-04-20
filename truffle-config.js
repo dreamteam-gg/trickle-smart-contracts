@@ -60,26 +60,6 @@ module.exports = {
       // websockets: true        // Enable EventEmitter interface for web3 (default: false)
     // },
 
-    // Useful for deploying to a public network.
-    // NB: It's important to wrap the provider as a function.
-    ropsten: {
-      provider: () => new PrivateKeyProvider(process.env["ROPSTEN_PRIVATE_KEY"], `https://ropsten.infura.io/${process.env["INFURA_KEY"]}`),
-      network_id: 3,
-      gas: 4700000,
-      confirmations: 0,
-      timeoutBlocks: 200,
-      skipDryRun: true
-    },
-
-    mainnet: {
-      provider: () => new PrivateKeyProvider(process.env["MAINNET_PRIVATE_KEY"], `https://ropsten.infura.io/${process.env["INFURA_KEY"]}`),
-      network_id: 1,       
-      gas: 4700000,        
-      confirmations: 0,  
-      timeoutBlocks: 200,
-      skipDryRun: true
-    },
-
     // Useful for private networks
     // private: {
       // provider: () => new HDWalletProvider(mnemonic, `https://network.io`),
