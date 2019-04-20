@@ -106,7 +106,7 @@ contract Trickle {
     
     function cancelAgreement(uint256 agreementId) senderOnly(agreementId) external {
         Agreement storage record = agreements[agreementId];
-        
+
         require(!record.cancelled);
 
         if (withdrawAmount(agreementId) > 0) {
@@ -138,6 +138,8 @@ contract Trickle {
     function availableAmount(uint256 agreementId) private view returns (uint256) {
         if (block.timestamp >= agreements[agreementId].start.add(agreements[agreementId].duration)) {
             return agreements[agreementId].totalAmount;
+        } else if (block.timestamp <= agreements[agreementId].start) {
+            return 0;
         } else {
             return agreements[agreementId].totalAmount.mul(
                 block.timestamp.sub(agreements[agreementId].start)
