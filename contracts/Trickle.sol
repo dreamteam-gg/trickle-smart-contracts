@@ -73,11 +73,12 @@ contract Trickle {
         uint256 start, 
         uint256 duration,
         uint256 totalAmount,
-        uint256 releasedAmount
+        uint256 releasedAmount,
+        bool cancelled
     ) {
         Agreement memory record = agreements[agreementId];
         
-        return (record.token, record.recipient, record.sender, record.start, record.duration, record.totalAmount, record.releasedAmount);
+        return (record.token, record.recipient, record.sender, record.start, record.duration, record.totalAmount, record.releasedAmount, record.cancelled);
     }
     
     function withdrawTokens(uint256 agreementId) public {
@@ -104,11 +105,13 @@ contract Trickle {
     }
     
     function cancelAgreement(uint256 agreementId) senderOnly(agreementId) external {
+        Agreement storage record = agreements[agreementId];
+        
+        require(!record.cancelled);
+
         if (withdrawAmount(agreementId) > 0) {
             withdrawTokens(agreementId);
         }
-        
-        Agreement storage record = agreements[agreementId];
         
         uint256 releasedAmount = record.releasedAmount;
         uint256 cancelledAmount = record.totalAmount.sub(releasedAmount); 
