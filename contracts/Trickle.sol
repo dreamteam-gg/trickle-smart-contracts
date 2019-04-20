@@ -7,9 +7,9 @@ contract Trickle {
     
     using SafeMath for uint256;
     
-    event AgreementCreated(uint256 agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 duration, uint256 totalAmount);
-    event AgreementCancelled(uint256 agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 endedAt, uint256 amountReleased, uint256 amountCancelled);
-    event Withdraw(uint256 agreementId, address token, address indexed recipient, address indexed sender, uint256 amountReleased, uint256 withdrawAt);
+    event AgreementCreated(uint256 agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 duration, uint256 totalAmount, uint256 createdAt);
+    event AgreementCancelled(uint256 agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 amountReleased, uint256 amountCancelled, uint256 endedAt);
+    event Withdraw(uint256 agreementId, address token, address indexed recipient, address indexed sender, uint256 amountReleased, uint256 releasedAt);
     
     uint256 private lastAgreementId;
     
@@ -59,7 +59,8 @@ contract Trickle {
             record.sender,
             record.start,
             record.duration,
-            record.totalAmount
+            record.totalAmount,
+            block.timestamp
         );
     }
     
@@ -103,7 +104,10 @@ contract Trickle {
     }
     
     function cancelAgreement(uint256 agreementId) senderOnly(agreementId) external {
-        withdrawTokens(agreementId);
+        if (withdrawAmount(agreementId) > 0) {
+            withdrawTokens(agreementId);
+        }
+        
         Agreement memory record = agreements[agreementId];
         
         uint256 releasedAmount = record.releasedAmount;
@@ -117,9 +121,9 @@ contract Trickle {
             record.recipient,
             record.sender,
             record.start,
-            block.timestamp,
             releasedAmount,
-            cancelledAmount
+            cancelledAmount,
+            block.timestamp
         );
         
         delete agreements[agreementId];
