@@ -7,9 +7,9 @@ contract Trickle {
     
     using SafeMath for uint256;
     
-    event AgreementCreated(uint256 agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 duration, uint256 totalAmount, uint256 createdAt);
-    event AgreementCancelled(uint256 agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 amountReleased, uint256 amountCancelled, uint256 endedAt);
-    event Withdraw(uint256 agreementId, address token, address indexed recipient, address indexed sender, uint256 amountReleased, uint256 releasedAt);
+    event AgreementCreated(uint256 indexed agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 duration, uint256 totalAmount, uint256 createdAt);
+    event AgreementCancelled(uint256 indexed agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 amountReleased, uint256 amountCancelled, uint256 endedAt);
+    event Withdraw(uint256 indexed agreementId, address token, address indexed recipient, address indexed sender, uint256 amountReleased, uint256 releasedAt);
     
     uint256 private lastAgreementId;
     
@@ -97,10 +97,6 @@ contract Trickle {
             unreleased,
             block.timestamp
         );
-        
-        if (record.releasedAmount == record.totalAmount) {
-            delete agreements[agreementId];
-        }
     }
     
     function cancelAgreement(uint256 agreementId) senderOnly(agreementId) external {
@@ -108,7 +104,7 @@ contract Trickle {
             withdrawTokens(agreementId);
         }
         
-        Agreement memory record = agreements[agreementId];
+        Agreement storage record = agreements[agreementId];
         
         uint256 releasedAmount = record.releasedAmount;
         uint256 cancelledAmount = record.totalAmount.sub(releasedAmount); 
@@ -125,8 +121,13 @@ contract Trickle {
             cancelledAmount,
             block.timestamp
         );
-        
-        delete agreements[agreementId];
+
+        uint256 agreementDeadline = record.start.add(record.duration);
+        if (block.timestamp < record.start) {
+            record.duration = 0;
+        } else if (block.timestamp < agreementDeadline) {
+            record.duration = block.timestamp.sub(record.start);
+        }
     }
     
     function withdrawAmount (uint256 agreementId) private view returns (uint256) {

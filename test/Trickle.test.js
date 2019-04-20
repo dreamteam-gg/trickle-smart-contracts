@@ -60,11 +60,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
         });
 
         const senderBalance = (await this.token.balanceOf.call(sender)).toString();
-        senderBalance.should.equals(initialSupply.toString());
-
-        // Contract were successfully deleted
-        const agreementDetails = await this.trickle.getAgreement(agreementId);
-        agreementDetails['token'].should.be.equals('0x0000000000000000000000000000000000000000');
+        senderBalance.should.equals(initialSupply.toString());      
     });
   });
 
@@ -111,10 +107,6 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
         recipientBalance = (await this.token.balanceOf.call(recipient)).toString();
         const expectedAmount = new BN(amountReleased * 2);
         await recipientBalance.should.be.equals(expectedAmount.toString());
-
-        // Contract were successfully deleted
-        const agreementDetails = await this.trickle.getAgreement(agreementId);
-        agreementDetails['token'].should.be.equals('0x0000000000000000000000000000000000000000');
     });
   });
 });
