@@ -21,6 +21,7 @@ contract Trickle {
         uint256 duration;
         uint256 totalAmount;
         uint256 releasedAmount;
+        bool cancelled;
     }
     
     mapping (uint256 => Agreement) private agreements;
@@ -46,7 +47,8 @@ contract Trickle {
             duration: duration,
             totalAmount: totalAmount,
             sender: msg.sender,
-            releasedAmount: 0
+            releasedAmount: 0,
+            cancelled: false
         });
         
         token.transferFrom(agreements[agreementId].sender, address(this), agreements[agreementId].totalAmount);
@@ -80,12 +82,14 @@ contract Trickle {
     
     function withdrawTokens(uint256 agreementId) public {
         require(agreementId <= lastAgreementId && agreementId != 0, "Invalid agreement specified");
-        
-        uint256 unreleased = withdrawAmount(agreementId);
-        require(unreleased > 0);
-        
+
         Agreement storage record = agreements[agreementId];
         
+        require(!record.cancelled);
+
+        uint256 unreleased = withdrawAmount(agreementId);
+        require(unreleased > 0);
+
         record.releasedAmount = record.releasedAmount.add(unreleased);
         record.token.transfer(record.recipient, unreleased);
         
@@ -110,6 +114,7 @@ contract Trickle {
         uint256 cancelledAmount = record.totalAmount.sub(releasedAmount); 
         
         record.token.transfer(record.sender, cancelledAmount);
+        record.cancelled = true;
         
         emit AgreementCancelled(
             agreementId,
@@ -121,13 +126,6 @@ contract Trickle {
             cancelledAmount,
             block.timestamp
         );
-
-        uint256 agreementDeadline = record.start.add(record.duration);
-        if (block.timestamp < record.start) {
-            record.duration = 0;
-        } else if (block.timestamp < agreementDeadline) {
-            record.duration = block.timestamp.sub(record.start);
-        }
     }
     
     function withdrawAmount (uint256 agreementId) private view returns (uint256) {
