@@ -1,1 +1,0 @@
-# Trickle DAPP backend
