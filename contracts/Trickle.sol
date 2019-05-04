@@ -4,15 +4,15 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 contract Trickle {
-    
+
     using SafeMath for uint256;
-    
+
     event AgreementCreated(uint256 indexed agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 duration, uint256 totalAmount, uint256 createdAt);
-    event AgreementCancelled(uint256 indexed agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 amountReleased, uint256 amountCancelled, uint256 endedAt);
+    event AgreementCanceled(uint256 indexed agreementId, address token, address indexed recipient, address indexed sender, uint256 start, uint256 amountReleased, uint256 amountCanceled, uint256 endedAt);
     event Withdraw(uint256 indexed agreementId, address token, address indexed recipient, address indexed sender, uint256 amountReleased, uint256 releasedAt);
-    
+
     uint256 private lastAgreementId;
-    
+
     struct Agreement {
         IERC20 token;
         address recipient;
@@ -21,22 +21,30 @@ contract Trickle {
         uint256 duration;
         uint256 totalAmount;
         uint256 releasedAmount;
-        bool cancelled;
+        bool canceled;
     }
-    
+
     mapping (uint256 => Agreement) private agreements;
-    
-    modifier senderOnly(uint256 agreementId) {
-        require (msg.sender == agreements[agreementId].sender);
+
+    modifier allowedOnly(uint256 agreementId) {
+        Agreement memory record = agreements[agreementId];
+        require (msg.sender == record.sender || msg.sender == record.recipient, "Allowed only for sender or recipient");
         _;
     }
-    
+
+    modifier validAgreement(uint256 agreementId) {
+        require(agreementId <= lastAgreementId && agreementId != 0, "Invalid agreement specified");
+        Agreement memory record = agreements[agreementId];
+        require(record.token != IERC20(0x0), "Invalid agreement specified");
+        _;
+    }
+
     function createAgreement(IERC20 token, address recipient, uint256 totalAmount, uint256 duration, uint256 start) external {
-        require(duration > 0);
-        require(totalAmount > 0);
-        require(start > 0);
-        require(token != IERC20(0x0));
-        require(recipient != address(0x0));
+        require(duration > 0, "Duration should be greater than zero");
+        require(totalAmount > 0, "Total amount should be greater than zero");
+        require(start > 0, "Start should be greater than zero");
+        require(token != IERC20(0x0), "Token should be valid ethereum address");
+        require(recipient != address(0x0), "Recipient should be valid ethereum address");
         
         uint256 agreementId = ++lastAgreementId;
         
@@ -48,7 +56,7 @@ contract Trickle {
             totalAmount: totalAmount,
             sender: msg.sender,
             releasedAmount: 0,
-            cancelled: false
+            canceled: false
         });
         
         token.transferFrom(agreements[agreementId].sender, address(this), agreements[agreementId].totalAmount);
@@ -67,26 +75,24 @@ contract Trickle {
     }
     
     function getAgreement(uint256 agreementId) external view returns (
-        IERC20 token, 
-        address recipient, 
-        address sender, 
-        uint256 start, 
+        IERC20 token,
+        address recipient,
+        address sender,
+        uint256 start,
         uint256 duration,
         uint256 totalAmount,
         uint256 releasedAmount,
-        bool cancelled
+        bool canceled
     ) {
         Agreement memory record = agreements[agreementId];
         
-        return (record.token, record.recipient, record.sender, record.start, record.duration, record.totalAmount, record.releasedAmount, record.cancelled);
+        return (record.token, record.recipient, record.sender, record.start, record.duration, record.totalAmount, record.releasedAmount, record.canceled);
     }
     
-    function withdrawTokens(uint256 agreementId) public {
-        require(agreementId <= lastAgreementId && agreementId != 0, "Invalid agreement specified");
-
+    function withdrawTokens(uint256 agreementId) public validAgreement(agreementId) {
         Agreement storage record = agreements[agreementId];
         
-        require(!record.cancelled);
+        require(!record.canceled);
 
         uint256 unreleased = withdrawAmount(agreementId);
         require(unreleased > 0);
@@ -104,29 +110,29 @@ contract Trickle {
         );
     }
     
-    function cancelAgreement(uint256 agreementId) senderOnly(agreementId) external {
+    function cancelAgreement(uint256 agreementId) external validAgreement(agreementId) allowedOnly(agreementId) {
         Agreement storage record = agreements[agreementId];
 
-        require(!record.cancelled);
+        require(!record.canceled);
 
         if (withdrawAmount(agreementId) > 0) {
             withdrawTokens(agreementId);
         }
         
         uint256 releasedAmount = record.releasedAmount;
-        uint256 cancelledAmount = record.totalAmount.sub(releasedAmount); 
+        uint256 canceledAmount = record.totalAmount.sub(releasedAmount); 
         
-        record.token.transfer(record.sender, cancelledAmount);
-        record.cancelled = true;
+        record.token.transfer(record.sender, canceledAmount);
+        record.canceled = true;
         
-        emit AgreementCancelled(
+        emit AgreementCanceled(
             agreementId,
             address(record.token),
             record.recipient,
             record.sender,
             record.start,
             releasedAmount,
-            cancelledAmount,
+            canceledAmount,
             block.timestamp
         );
     }
