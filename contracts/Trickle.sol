@@ -39,9 +39,10 @@ contract Trickle {
     uint256 private lastAgreementId;
 
     struct Agreement {
-        uint48 start;
-        uint48 duration;
-        IERC20 token;
+        uint256 meta; // Metadata packs 3 values to save on storage:
+                      // + uint48 start; // Timestamp with agreement start. Up to year 999999+.
+                      // + uint48 duration; // Agreement duration. Up to year 999999+.
+                      // + uint160 token; // Token address converted to uint.
         uint256 totalAmount;
         uint256 releasedAmount;
         address recipient;
@@ -59,7 +60,8 @@ contract Trickle {
     modifier validAgreement(uint256 agreementId) {
         require(agreementId <= lastAgreementId && agreementId != 0, "Invalid agreement specified");
         Agreement memory record = agreements[agreementId];
-        require(record.token != IERC20(0x0), "Invalid agreement specified");
+        (uint48 start, uint48 duration, address token) = decodeMeta(record.meta);
+        require(token != address(0x0), "Invalid agreement specified");
         require(record.releasedAmount < record.totalAmount, "No tokens left for withdraw");
         _;
     }
@@ -74,10 +76,8 @@ contract Trickle {
         uint256 agreementId = ++lastAgreementId;
 
         agreements[agreementId] = Agreement({
-            token: token,
+            meta: encodeMeta(start, duration, uint256(address(token))),
             recipient: recipient,
-            start: start,
-            duration: duration,
             totalAmount: totalAmount,
             sender: msg.sender,
             releasedAmount: 0
@@ -88,18 +88,18 @@ contract Trickle {
         Agreement memory record = agreements[agreementId];
         emit AgreementCreated(
             agreementId,
-            address(record.token),
+            address(token),
             record.recipient,
             record.sender,
-            record.start,
-            record.duration,
+            start,
+            duration,
             record.totalAmount,
             block.timestamp
         );
     }
 
     function getAgreement(uint256 agreementId) external view returns (
-        IERC20 token,
+        address token,
         address recipient,
         address sender,
         uint256 start,
@@ -108,8 +108,8 @@ contract Trickle {
         uint256 releasedAmount
     ) {
         Agreement memory record = agreements[agreementId];
-
-        return (record.token, record.recipient, record.sender, record.start, record.duration, record.totalAmount, record.releasedAmount);
+        (uint48 startMeta, uint48 durationMeta, address tokenMeta) = decodeMeta(record.meta);
+        return (tokenMeta, record.recipient, record.sender, startMeta, durationMeta, record.totalAmount, record.releasedAmount);
     }
 
     function withdrawTokens(uint256 agreementId) public validAgreement(agreementId) {
@@ -119,11 +119,12 @@ contract Trickle {
         require(unreleased > 0, "Nothing to withdraw");
 
         record.releasedAmount = record.releasedAmount.add(unreleased);
-        record.token.transfer(record.recipient, unreleased);
+        (, , address tokenMeta) = decodeMeta(record.meta);
+        IERC20(tokenMeta).transfer(record.recipient, unreleased);
 
         emit Withdraw(
             agreementId,
-            address(record.token),
+            tokenMeta,
             record.recipient,
             record.sender,
             unreleased,
@@ -141,18 +142,19 @@ contract Trickle {
         uint256 releasedAmount = record.releasedAmount;
         uint256 canceledAmount = record.totalAmount.sub(releasedAmount);
 
+        (uint48 startMeta, , address tokenMeta) = decodeMeta(record.meta);
         if (canceledAmount > 0) {
-            record.token.transfer(record.sender, canceledAmount);
+            IERC20(tokenMeta).transfer(record.sender, canceledAmount);
         }
 
         record.releasedAmount = record.totalAmount;
 
         emit AgreementCanceled(
             agreementId,
-            address(record.token),
+            tokenMeta,
             record.recipient,
             record.sender,
-            record.start,
+            startMeta,
             releasedAmount,
             canceledAmount,
             block.timestamp
@@ -165,8 +167,9 @@ contract Trickle {
 
     function availableAmount(uint256 agreementId) private view returns (uint256) {
         Agreement memory record = agreements[agreementId];
-        uint256 start = uint256(record.start);
-        uint256 duration = uint256(record.duration);
+        (uint48 startMeta, uint48 durationMeta, ) = decodeMeta(record.meta);
+        uint256 start = uint256(startMeta);
+        uint256 duration = uint256(durationMeta);
         if (block.timestamp >= start.add(duration)) {
             return record.totalAmount;
         } else if (block.timestamp <= start) {
@@ -176,5 +179,26 @@ contract Trickle {
                 block.timestamp.sub(start)
             ).div(duration);
         }
+    }
+
+    function encodeMeta(uint256 start, uint256 duration, uint256 token) private pure returns(uint256 result) {
+        require(
+            start < 2 ** 48 &&
+            duration < 2 ** 48 &&
+            token < 2 ** 160,
+            "Invalid input sizes to encode"
+        );
+
+        result = start;
+        result |= duration << (48);
+        result |= token << (48 + 48);
+
+        return result;
+    }
+
+    function decodeMeta(uint256 meta) private pure returns(uint48 start, uint48 duration, address token) {
+        start = uint48(meta);
+        duration = uint48(meta >> (48));
+        token = address(meta >> (48 + 48));
     }
 }

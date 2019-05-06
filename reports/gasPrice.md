@@ -75,3 +75,40 @@
   18 passing (4s)
 ```
 
+### Gas price after encode 3 variables into one uint256
+```
+  Contract: Trickle
+    create agreement
+160520 gas (~$0.0785, 163 USD/ETH)
+      ✓ creates agreement (105ms)
+160520 gas (~$0.0785, 163 USD/ETH)
+130520 gas (~$0.0638, 163 USD/ETH)
+      ✓ creates multiple agreements (196ms)
+      ✓ can't create without tokens approved
+      ✓ can't create with invalid start
+      ✓ can't create with invalid amount
+      ✓ can't create with invalid token
+      ✓ can't create with invalid recipient
+      ✓ can't create with invalid duration
+    cancel agreement
+53875 gas (~$0.0263, 163 USD/ETH)
+      ✓ can be cancelled before agreement starts (117ms)
+97980 gas (~$0.0479, 163 USD/ETH)
+      ✓ can be cancelled in the middle of agreement (187ms)
+81904 gas (~$0.0401, 163 USD/ETH)
+      ✓ can be cancelled at the and of agreement (149ms)
+82073 gas (~$0.0401, 163 USD/ETH)
+      ✓ can be canceled from recipient (100ms)
+      ✓ can't be canceled twice (162ms)
+      ✓ can't be cancelled from 3rd party account (87ms)
+      ✓ should fail if agreement does not exists (76ms)
+    withdraw tokens
+80718 gas (~$0.0395, 163 USD/ETH) - Withdraw tokens for the first time
+35385 gas (~$0.0173, 163 USD/ETH) - Withdraw tokens for the second time
+      ✓ withdraw tokens (278ms)
+      ✓ should fail if agreement id doesn't exist (80ms)
+      ✓ should fail if trying to get tokens after cancel (127ms)
+
+
+  18 passing (4s)
+```
