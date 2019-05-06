@@ -107,7 +107,28 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
       await senderBalance.should.equals(initialSupply.toString());      
     });
 
-    it('can be cancelled from recipient', async function () {
+    it('can be cancelled in the middle of agreement', async function() {
+      const amountReleased = new BN(totalAmount / 2);
+      start = await time.latest();
+      
+      await this.trickle.createAgreement(this.token.address, recipient, totalAmount, duration, start, {from: sender});
+      const initialSenderBalance = await this.token.balanceOf.call(sender);
+      const initialRecipientBalance = await this.token.balanceOf.call(recipient);
+      await time.increase(duration / 2);
+      await this.trickle.cancelAgreement(agreementId, {from: sender});
+      
+      const senderBalance = (await this.token.balanceOf.call(sender)).toString();
+      await senderBalance.should.equals(
+        (initialSenderBalance.add(amountReleased)).toString()
+      );
+
+      const recipientBalance = (await this.token.balanceOf.call(recipient)).toString();
+      await recipientBalance.should.equals(
+        (initialRecipientBalance.add(amountReleased)).toString()
+      );
+    });
+
+    it('can be canceled from recipient', async function () {
       await this.trickle.createAgreement(this.token.address, recipient, totalAmount, duration, start, {from: sender});
       await this.trickle.cancelAgreement(agreementId, {from: recipient});
     })
@@ -132,7 +153,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
 
   describe('withdraw tokens', function () {
     it('withdraw tokens', async function () {
-      start = new BN(moment().unix());
+      start = await time.latest();
       
       await this.trickle.createAgreement(this.token.address, recipient, totalAmount, duration, start, {from: sender});
       await time.increase(duration / 2);
