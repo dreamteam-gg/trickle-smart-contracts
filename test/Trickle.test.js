@@ -87,7 +87,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
   });
 
   describe('cancel agreement', function () {
-    it('can be canceled', async function () {
+    it('can be cancelled before agreement starts', async function () {
       await this.trickle.createAgreement(this.token.address, recipient, totalAmount, duration, start, {from: sender});
       const tx = await this.trickle.cancelAgreement(agreementId, {from: sender});
       const endedAt = await time.latest();
@@ -125,6 +125,18 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
       const recipientBalance = (await this.token.balanceOf.call(recipient)).toString();
       await recipientBalance.should.equals(
         (initialRecipientBalance.add(amountReleased)).toString()
+      );
+    });
+
+    it('can be cancelled at the and of agreement', async function () {
+      await this.trickle.createAgreement(this.token.address, recipient, totalAmount, duration, start, {from: sender});
+      const initialRecipientBalance = await this.token.balanceOf.call(recipient);
+      await time.increase(duration + 1);
+      await this.trickle.cancelAgreement(agreementId, {from: sender});
+
+      const recipientBalance = (await this.token.balanceOf.call(recipient)).toString();
+      await recipientBalance.should.equals(
+        (initialRecipientBalance.add(totalAmount)).toString()
       );
     });
 

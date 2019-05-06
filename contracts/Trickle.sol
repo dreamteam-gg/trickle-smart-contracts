@@ -61,6 +61,7 @@ contract Trickle {
         require(agreementId <= lastAgreementId && agreementId != 0, "Invalid agreement specified");
         Agreement memory record = agreements[agreementId];
         require(record.token != IERC20(0x0), "Invalid agreement specified");
+        require(record.releasedAmount < record.totalAmount, "No tokens left for withdraw");
         _;
     }
 
@@ -142,7 +143,10 @@ contract Trickle {
         uint256 releasedAmount = record.releasedAmount;
         uint256 canceledAmount = record.totalAmount.sub(releasedAmount);
 
-        record.token.transfer(record.sender, canceledAmount);
+        if (canceledAmount > 0) {
+            record.token.transfer(record.sender, canceledAmount);
+        }
+
         record.releasedAmount = record.totalAmount;
 
         emit AgreementCanceled(
