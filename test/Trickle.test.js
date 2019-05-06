@@ -213,6 +213,9 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
       const expectedAmount = new BN(amountReleased * 2);
       await recipientBalance.should.equals(expectedAmount.toString());
       console.log(`${getUsedGas(tx)} - Withdraw tokens for the second time`);
+
+      // Try to withdraw again
+      await shouldFail.reverting(this.trickle.withdrawTokens(agreementId));
     });
 
     it('should fail if agreement id doesn\'t exist', async function () {

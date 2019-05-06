@@ -39,14 +39,13 @@ contract Trickle {
     uint256 private lastAgreementId;
 
     struct Agreement {
+        uint48 start;
+        uint48 duration;
         IERC20 token;
-        address recipient;
-        address sender;
-        uint256 start;
-        uint256 duration;
         uint256 totalAmount;
         uint256 releasedAmount;
-        bool canceled;
+        address recipient;
+        address sender;
     }
 
     mapping (uint256 => Agreement) private agreements;
@@ -65,7 +64,7 @@ contract Trickle {
         _;
     }
 
-    function createAgreement(IERC20 token, address recipient, uint256 totalAmount, uint256 duration, uint256 start) external {
+    function createAgreement(IERC20 token, address recipient, uint256 totalAmount, uint48 duration, uint48 start) external {
         require(duration > 0, "Duration should be greater than zero");
         require(totalAmount > 0, "Total amount should be greater than zero");
         require(start > 0, "Start should be greater than zero");
@@ -81,8 +80,7 @@ contract Trickle {
             duration: duration,
             totalAmount: totalAmount,
             sender: msg.sender,
-            releasedAmount: 0,
-            canceled: false
+            releasedAmount: 0
         });
 
         token.transferFrom(agreements[agreementId].sender, address(this), agreements[agreementId].totalAmount);
@@ -167,14 +165,16 @@ contract Trickle {
 
     function availableAmount(uint256 agreementId) private view returns (uint256) {
         Agreement memory record = agreements[agreementId];
-        if (block.timestamp >= record.start.add(record.duration)) {
+        uint256 start = uint256(record.start);
+        uint256 duration = uint256(record.duration);
+        if (block.timestamp >= start.add(duration)) {
             return record.totalAmount;
-        } else if (block.timestamp <= record.start) {
+        } else if (block.timestamp <= start) {
             return 0;
         } else {
             return record.totalAmount.mul(
-                block.timestamp.sub(record.start)
-            ).div(record.duration);
+                block.timestamp.sub(start)
+            ).div(duration);
         }
     }
 }
