@@ -1,4 +1,5 @@
 const { BN, constants, expectEvent, time, shouldFail } = require('openzeppelin-test-helpers');
+const { getUsedGas } = require('./helpers/getUsedGas');
 const moment = require('moment');
 const { ZERO_ADDRESS } = constants;
 
@@ -38,6 +39,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
         'duration': duration,
         'totalAmount': totalAmount
       });
+      console.log(getUsedGas(tx));
     });
 
     it('creates multiple agreements', async function () {
@@ -46,6 +48,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
       expectEvent.inLogs(tx.logs, 'AgreementCreated', {
         'agreementId': agreementId,
       });
+      console.log(getUsedGas(tx));
 
       agreementId = new BN(2);
       await this.token.approve(this.trickle.address, totalAmount, {from: sender});
@@ -53,6 +56,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
       expectEvent.inLogs(tx.logs, 'AgreementCreated', {
         'agreementId': agreementId,
       });
+      console.log(getUsedGas(tx));
     })
 
     it('can\'t create without tokens approved', async function () {
@@ -104,7 +108,8 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
       });
 
       const senderBalance = (await this.token.balanceOf.call(sender)).toString();
-      await senderBalance.should.equals(initialSupply.toString());      
+      await senderBalance.should.equals(initialSupply.toString());
+      console.log(getUsedGas(tx));
     });
 
     it('can be cancelled in the middle of agreement', async function() {
@@ -115,7 +120,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
       const initialSenderBalance = await this.token.balanceOf.call(sender);
       const initialRecipientBalance = await this.token.balanceOf.call(recipient);
       await time.increase(duration / 2);
-      await this.trickle.cancelAgreement(agreementId, {from: sender});
+      const tx = await this.trickle.cancelAgreement(agreementId, {from: sender});
       
       const senderBalance = (await this.token.balanceOf.call(sender)).toString();
       await senderBalance.should.equals(
@@ -126,23 +131,26 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
       await recipientBalance.should.equals(
         (initialRecipientBalance.add(amountReleased)).toString()
       );
+      console.log(getUsedGas(tx));
     });
 
     it('can be cancelled at the and of agreement', async function () {
       await this.trickle.createAgreement(this.token.address, recipient, totalAmount, duration, start, {from: sender});
       const initialRecipientBalance = await this.token.balanceOf.call(recipient);
       await time.increase(duration + 1);
-      await this.trickle.cancelAgreement(agreementId, {from: sender});
+      const tx = await this.trickle.cancelAgreement(agreementId, {from: sender});
 
       const recipientBalance = (await this.token.balanceOf.call(recipient)).toString();
       await recipientBalance.should.equals(
         (initialRecipientBalance.add(totalAmount)).toString()
       );
+      console.log(getUsedGas(tx));
     });
 
     it('can be canceled from recipient', async function () {
       await this.trickle.createAgreement(this.token.address, recipient, totalAmount, duration, start, {from: sender});
-      await this.trickle.cancelAgreement(agreementId, {from: recipient});
+      const tx = await this.trickle.cancelAgreement(agreementId, {from: recipient});
+      console.log(getUsedGas(tx));
     })
 
     it('can\'t be canceled twice', async function () {
@@ -183,6 +191,8 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
 
       let recipientBalance = (await this.token.balanceOf.call(recipient)).toString();
       await recipientBalance.should.equals(amountReleased.toString());
+      
+      console.log(`${getUsedGas(tx)} - Withdraw tokens for the first time`);
 
       // Try to withdraw twice
       await shouldFail.reverting(this.trickle.withdrawTokens(agreementId));
@@ -202,6 +212,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
       recipientBalance = (await this.token.balanceOf.call(recipient)).toString();
       const expectedAmount = new BN(amountReleased * 2);
       await recipientBalance.should.equals(expectedAmount.toString());
+      console.log(`${getUsedGas(tx)} - Withdraw tokens for the second time`);
     });
 
     it('should fail if agreement id doesn\'t exist', async function () {
