@@ -12,8 +12,7 @@
   },
   "scripts": {
     "build-contracts": "sol-merger \"./contracts/*.sol\" ./build/merged-contracts",
-    "lint": "solhint \"./contracts/*.sol\"",
-    "prettier": "prettier --write ./contracts/*.sol"
+    "lint": "solhint \"./contracts/*.sol\""
   },
   "keywords": [
     "solidity",
