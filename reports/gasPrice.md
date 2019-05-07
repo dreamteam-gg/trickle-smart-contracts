@@ -112,3 +112,41 @@
 
   18 passing (4s)
 ```
+
+### Gas price after getting rid of memory variables where appliable. Set 1000 runs for solc optimizer.
+```
+  Contract: Trickle
+    create agreement
+157833 gas (~$0.0772, 163 USD/ETH)
+      ✓ creates agreement (95ms)
+157833 gas (~$0.0772, 163 USD/ETH)
+127833 gas (~$0.0625, 163 USD/ETH)
+      ✓ creates multiple agreements (179ms)
+      ✓ can't create without tokens approved
+      ✓ can't create with invalid start
+      ✓ can't create with invalid amount
+      ✓ can't create with invalid token
+      ✓ can't create with invalid recipient
+      ✓ can't create with invalid duration
+    cancel agreement
+49248 gas (~$0.0241, 163 USD/ETH)
+      ✓ can be cancelled before agreement starts (114ms)
+91374 gas (~$0.0447, 163 USD/ETH)
+      ✓ can be cancelled in the middle of agreement (178ms)
+75277 gas (~$0.0368, 163 USD/ETH)
+      ✓ can be cancelled at the and of agreement (138ms)
+75565 gas (~$0.037, 163 USD/ETH)
+      ✓ can be canceled from recipient (92ms)
+      ✓ can't be canceled twice (160ms)
+      ✓ can't be cancelled from 3rd party account (80ms)
+      ✓ should fail if agreement does not exists (74ms)
+    withdraw tokens
+78179 gas (~$0.0382, 163 USD/ETH) - Withdraw tokens for the first time
+32843 gas (~$0.0161, 163 USD/ETH) - Withdraw tokens for the second time
+      ✓ withdraw tokens (274ms)
+      ✓ should fail if agreement id doesn't exist (76ms)
+      ✓ should fail if trying to get tokens after cancel (123ms)
+
+
+  18 passing (4s)
+```

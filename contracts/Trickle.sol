@@ -23,9 +23,10 @@ contract Trickle {
         address indexed recipient,
         address indexed sender,
         uint256 start,
+        uint256 duration,
         uint256 amountReleased,
         uint256 amountCanceled,
-        uint256 endedAt
+        uint256 canceledAt
     );
     event Withdraw(
         uint256 indexed agreementId,
@@ -51,18 +52,17 @@ contract Trickle {
 
     mapping (uint256 => Agreement) private agreements;
 
-    modifier allowedOnly(uint256 agreementId) {
-        Agreement memory record = agreements[agreementId];
-        require (msg.sender == record.sender || msg.sender == record.recipient, "Allowed only for sender or recipient");
+    modifier agreementPartiesOnly(uint256 agreementId) {
+        require (
+            msg.sender == agreements[agreementId].sender ||
+            msg.sender == agreements[agreementId].recipient,
+            "Allowed only for sender or recipient"
+        );
         _;
     }
 
     modifier validAgreement(uint256 agreementId) {
-        require(agreementId <= lastAgreementId && agreementId != 0, "Invalid agreement specified");
-        Agreement memory record = agreements[agreementId];
-        (uint48 start, uint48 duration, address token) = decodeMeta(record.meta);
-        require(token != address(0x0), "Invalid agreement specified");
-        require(record.releasedAmount < record.totalAmount, "No tokens left for withdraw");
+        require(agreements[agreementId].releasedAmount < agreements[agreementId].totalAmount, "Agreement is completed or does not exists");
         _;
     }
 
@@ -85,15 +85,14 @@ contract Trickle {
 
         token.transferFrom(agreements[agreementId].sender, address(this), agreements[agreementId].totalAmount);
 
-        Agreement memory record = agreements[agreementId];
         emit AgreementCreated(
             agreementId,
             address(token),
-            record.recipient,
-            record.sender,
+            recipient,
+            msg.sender,
             start,
             duration,
-            record.totalAmount,
+            totalAmount,
             block.timestamp
         );
     }
@@ -107,75 +106,71 @@ contract Trickle {
         uint256 totalAmount,
         uint256 releasedAmount
     ) {
-        Agreement memory record = agreements[agreementId];
-        (uint48 startMeta, uint48 durationMeta, address tokenMeta) = decodeMeta(record.meta);
-        return (tokenMeta, record.recipient, record.sender, startMeta, durationMeta, record.totalAmount, record.releasedAmount);
+        (start, duration, token) = decodeMeta(agreements[agreementId].meta);
+        sender = agreements[agreementId].sender;
+        totalAmount = agreements[agreementId].totalAmount;
+        releasedAmount = agreements[agreementId].releasedAmount;
+        recipient = agreements[agreementId].recipient;
     }
 
     function withdrawTokens(uint256 agreementId) public validAgreement(agreementId) {
-        Agreement storage record = agreements[agreementId];
-
-        uint256 unreleased = withdrawAmount(agreementId);
+        uint256 unreleased = withdrawableAmount(agreementId);
         require(unreleased > 0, "Nothing to withdraw");
 
-        record.releasedAmount = record.releasedAmount.add(unreleased);
-        (, , address tokenMeta) = decodeMeta(record.meta);
-        IERC20(tokenMeta).transfer(record.recipient, unreleased);
+        agreements[agreementId].releasedAmount = agreements[agreementId].releasedAmount.add(unreleased);
+        (, , address token) = decodeMeta(agreements[agreementId].meta);
+        IERC20(token).transfer(agreements[agreementId].recipient, unreleased);
 
         emit Withdraw(
             agreementId,
-            tokenMeta,
-            record.recipient,
-            record.sender,
+            token,
+            agreements[agreementId].recipient,
+            agreements[agreementId].sender,
             unreleased,
             block.timestamp
         );
     }
 
-    function cancelAgreement(uint256 agreementId) external validAgreement(agreementId) allowedOnly(agreementId) {
-        Agreement storage record = agreements[agreementId];
-
-        if (withdrawAmount(agreementId) > 0) {
+    function cancelAgreement(uint256 agreementId) external validAgreement(agreementId) agreementPartiesOnly(agreementId) {
+        if (withdrawableAmount(agreementId) > 0) {
             withdrawTokens(agreementId);
         }
 
-        uint256 releasedAmount = record.releasedAmount;
-        uint256 canceledAmount = record.totalAmount.sub(releasedAmount);
+        uint256 releasedAmount = agreements[agreementId].releasedAmount;
+        uint256 canceledAmount = agreements[agreementId].totalAmount.sub(releasedAmount);
 
-        (uint48 startMeta, , address tokenMeta) = decodeMeta(record.meta);
+        (uint256 start, uint256 duration, address token) = decodeMeta(agreements[agreementId].meta);
         if (canceledAmount > 0) {
-            IERC20(tokenMeta).transfer(record.sender, canceledAmount);
+            IERC20(token).transfer(agreements[agreementId].sender, canceledAmount);
         }
 
-        record.releasedAmount = record.totalAmount;
+        agreements[agreementId].releasedAmount = agreements[agreementId].totalAmount;
 
         emit AgreementCanceled(
             agreementId,
-            tokenMeta,
-            record.recipient,
-            record.sender,
-            startMeta,
+            token,
+            agreements[agreementId].recipient,
+            agreements[agreementId].sender,
+            start,
+            duration,
             releasedAmount,
             canceledAmount,
             block.timestamp
         );
     }
 
-    function withdrawAmount(uint256 agreementId) private view returns (uint256) {
-        return availableAmount(agreementId).sub(agreements[agreementId].releasedAmount);
+    function withdrawableAmount(uint256 agreementId) public view returns (uint256) {
+        return proportionalAmount(agreementId).sub(agreements[agreementId].releasedAmount);
     }
 
-    function availableAmount(uint256 agreementId) private view returns (uint256) {
-        Agreement memory record = agreements[agreementId];
-        (uint48 startMeta, uint48 durationMeta, ) = decodeMeta(record.meta);
-        uint256 start = uint256(startMeta);
-        uint256 duration = uint256(durationMeta);
+    function proportionalAmount(uint256 agreementId) private view returns (uint256) {
+        (uint256 start, uint256 duration, ) = decodeMeta(agreements[agreementId].meta);
         if (block.timestamp >= start.add(duration)) {
-            return record.totalAmount;
+            return agreements[agreementId].totalAmount;
         } else if (block.timestamp <= start) {
             return 0;
         } else {
-            return record.totalAmount.mul(
+            return agreements[agreementId].totalAmount.mul(
                 block.timestamp.sub(start)
             ).div(duration);
         }
@@ -196,7 +191,7 @@ contract Trickle {
         return result;
     }
 
-    function decodeMeta(uint256 meta) private pure returns(uint48 start, uint48 duration, address token) {
+    function decodeMeta(uint256 meta) private pure returns(uint256 start, uint256 duration, address token) {
         start = uint48(meta);
         duration = uint48(meta >> (48));
         token = address(meta >> (48 + 48));

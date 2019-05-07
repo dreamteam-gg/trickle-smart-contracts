@@ -94,7 +94,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
     it('can be cancelled before agreement starts', async function () {
       await this.trickle.createAgreement(this.token.address, recipient, totalAmount, duration, start, {from: sender});
       const tx = await this.trickle.cancelAgreement(agreementId, {from: sender});
-      const endedAt = await time.latest();
+      const canceledAt = await time.latest();
 
       expectEvent.inLogs(tx.logs, 'AgreementCanceled', {
         'agreementId': agreementId,
@@ -102,7 +102,7 @@ contract('Trickle', function ([_, sender, recipient, anotherAccount]) {
         'recipient': recipient,
         'sender': sender,
         'start': start,
-        'endedAt': endedAt,
+        'canceledAt': canceledAt,
         'amountReleased': new BN(0),
         'amountCanceled': totalAmount
       });
