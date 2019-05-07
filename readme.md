@@ -1,10 +1,19 @@
 # Trickle
 
-The back end for [Trickle.gg](https://trickle.gg) decentralized application. The front end is [here](https://github.com/dreamteam-gg/trickle-frontend).
+The "back end" repository for [Trickle.gg](https://trickle.gg) decentralized application. The front end (master repository) is [here](https://github.com/dreamteam-gg/trickle-frontend).
 
-Your hourly pay, cryptographically secured with blockchain. Trickle lets you create safe hourly-rate-driven contracts with the people across the globe with no risks.
+Trickle - your hourly pay, cryptographically secured with blockchain. Trickle lets you create safe **fixed hourly rate contracts** with the people across the globe eliminating risks and wage theft. Create smart agreements with crypto: stablecoins or any ERC20-compatible tokens on top of [Ethereum](https://www.ethereum.org/).
 
-Create smart contracts with crypto: stablecoins and any ERC20-compatible tokens on top of Ethereum.
+**Useful Links:**
+
++ [Trickle DApp](https://trickle.gg)!
++ Trickle [DApp master repository](https://github.com/dreamteam-gg/trickle-dapp/) (for issues & feedback)
++ Trickle [smart contracts repository](https://github.com/dreamteam-gg/trickle-smart-contracts) (this one)
++ Trickle smart contracts in Ethereum network:
+   + Mainnet: [trickle.ethglobal.eth](https://etherscan.io/address/trickle.ethglobal.eth)
+   + Ropsten: [0x19631910d87516db1f1fc2047c1393db0eb8b32e](https://ropsten.etherscan.io/address/0x19631910d87516db1f1fc2047c1393db0eb8b32e)
++ Trickle at [DevPost](https://devpost.com/software/trickle) (the [winning](https://medium.com/the-ethereum-name-service/trickle-dtok-and-more-meet-the-ens-winners-at-ethcapetown-ebf160bd9e78) project of [EthCapeTown](https://ethcapetown.com/) hackathon!)
++ Trickle [demo video](https://www.youtube.com/watch?v=6jz8Vux31BQ)
 
 <p align="center">
   <img width="405" height="720" src="https://user-images.githubusercontent.com/4989256/56658512-78914700-66a3-11e9-85a0-cd2d906d42ff.png">
