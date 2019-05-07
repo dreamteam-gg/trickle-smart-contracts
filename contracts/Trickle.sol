@@ -140,11 +140,11 @@ contract Trickle {
         uint256 canceledAmount = agreements[agreementId].totalAmount.sub(releasedAmount);
 
         (uint256 start, uint256 duration, address token) = decodeMeta(agreements[agreementId].meta);
+
+        agreements[agreementId].releasedAmount = agreements[agreementId].totalAmount;
         if (canceledAmount > 0) {
             IERC20(token).transfer(agreements[agreementId].sender, canceledAmount);
         }
-
-        agreements[agreementId].releasedAmount = agreements[agreementId].totalAmount;
 
         emit AgreementCanceled(
             agreementId,
