@@ -3,6 +3,14 @@ pragma solidity 0.5.7;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
+/**
+ * Trickle is a decentralized program allowing people to create
+ * secure fixed hourly rate agreements leveraging the power of blockchain technology.
+ * Trickle works with any ERC20-compatible tokens on top of Ethereum, including stablecoins.
+ *
+ * Brought to you by DreamTeam <https://token.dreamteam.gg>.
+ * Learn more about Trickle <https://github.com/dreamteam-gg/trickle-dapp>.
+ */
 contract Trickle {
 
     using SafeMath for uint256;
@@ -41,9 +49,9 @@ contract Trickle {
 
     struct Agreement {
         uint256 meta; // Metadata packs 3 values to save on storage:
-                      // + uint48 start; // Timestamp with agreement start. Up to year 999999+.
+                      // + uint48 start;    // Timestamp with agreement start. Up to year 999999+.
                       // + uint48 duration; // Agreement duration. Up to year 999999+.
-                      // + uint160 token; // Token address converted to uint.
+                      // + uint160 token;   // Token address converted to uint.
         uint256 totalAmount;
         uint256 releasedAmount;
         address recipient;
@@ -56,7 +64,7 @@ contract Trickle {
         require (
             msg.sender == agreements[agreementId].sender ||
             msg.sender == agreements[agreementId].recipient,
-            "Allowed only for sender or recipient"
+            "Allowed only for agreement's sender or recipient"
         );
         _;
     }
@@ -67,11 +75,11 @@ contract Trickle {
     }
 
     function createAgreement(IERC20 token, address recipient, uint256 totalAmount, uint48 duration, uint48 start) external {
-        require(duration > 0, "Duration should be greater than zero");
-        require(totalAmount > 0, "Total amount should be greater than zero");
-        require(start > 0, "Start should be greater than zero");
-        require(token != IERC20(0x0), "Token should be valid ethereum address");
-        require(recipient != address(0x0), "Recipient should be valid ethereum address");
+        require(duration > 0, "Duration must be greater than zero");
+        require(totalAmount > 0, "Total Amount must be greater than zero");
+        require(start > 0, "Start must be greater than zero");
+        require(token != IERC20(0x0), "Token must be a valid Ethereum address");
+        require(recipient != address(0x0), "Recipient must be a valid Ethereum address");
 
         uint256 agreementId = ++lastAgreementId;
 
@@ -181,7 +189,7 @@ contract Trickle {
             start < 2 ** 48 &&
             duration < 2 ** 48 &&
             token < 2 ** 160,
-            "Invalid input sizes to encode"
+            "Start, Duration or Token Address provided have invalid values"
         );
 
         result = start;
@@ -196,4 +204,5 @@ contract Trickle {
         duration = uint48(meta >> (48));
         token = address(meta >> (48 + 48));
     }
+
 }
