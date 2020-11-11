@@ -1,3 +1,4 @@
 contracts/* linguist-language=Solidity
 test/* linguist-detectable=false
 tests/* linguist-detectable=false
+*.sol linguist-language=Solidity
